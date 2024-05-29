@@ -19,10 +19,9 @@ func Json(e *colly.HTMLElement) {
 
 func main() {
 	// Instantiate default collector
-	c := colly.NewCollector(
-	// Visit only domains: hackerspaces.org, wiki.hackerspaces.org
-	//colly.AllowedDomains("hackerspaces.org", "wiki.hackerspaces.org"),
-	)
+	// There is a very useful whitelist option in case
+	// it is decided to recursively crawl URLs
+	c := colly.NewCollector()
 
 	// On every a element which has href attribute call callback
 	c.OnHTML("a[href]", Stdout)
