@@ -28,22 +28,48 @@ func Json(url string) func(e *colly.HTMLElement) {
 	}
 }
 
+type StringListVar []string
+
+func (o *StringListVar) String() string {
+	val := ""
+	for _, v := range o {
+		val += v + ","
+	}
+
+	return strings.RStrip(val, ",")
+}
+
+func (o *StringListVar) Set(value string) error {
+	if o == nil {
+		return fmt.Errorf("missing mandatory argument")
+	}
+
+	o = append(o, value)
+	return nil
+}
+
 // CLI is a struct reprensenting accepted CLI arguments
 type CLI struct {
-	URL    string
+	URLs    []string
 	Output func(*colly.HTMLElement)
 }
 
 func (o *CLI) Parse() error {
-	var output string
+	var (
+		urls StringListVar
+		output string
+	)
 
-	flag.StringVar(&o.URL, "u", "", "Url to collect links from. Can be used several times")
+	flag.Var(&urls, "u", "Url to collect links from. Can be used several times")
 	flag.StringVar(&output, "o", "stdout", "Output formats. Possible formats are 'stdout' and 'json'")
 	flag.Parse()
 
-	if o.URL == "" {
+	o.URLs = string(urls)
+	/*
+	if o.URL == nil {
 		return fmt.Errorf("cli error - URL argument is empty")
 	}
+	*/
 
 	switch strings.ToLower(output) {
 	case "stdout":
@@ -72,11 +98,13 @@ func main() {
 	c := colly.NewCollector()
 
 	// On every a element which has href attribute call callback
-	c.OnHTML("a[href]", cli.Output)
+	for _, url := range o.URLs {
+		c.OnHTML("a[href]", cli.Output)
 
-	// Start scraping on https://hackerspaces.org
-	if err := c.Visit(cli.URL); err != nil {
-		fmt.Printf("request error - %s\n", err)
-		os.Exit(1)
+		// Start scraping on https://hackerspaces.org
+		if err := c.Visit(cli.URL); err != nil {
+			fmt.Printf("request error - %s\n", err)
+			os.Exit(1)
+		}
 	}
 }
